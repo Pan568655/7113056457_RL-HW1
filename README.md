@@ -279,8 +279,8 @@ if __name__ == '__main__':
 ##程式執行結果
 以下為實際執行後，產生的 Value Matrix 與 Policy Matrix 圖示範例：
 
-![執行成果圖](static/sample1.png)
+![執行成果圖](static/sample1.PNG)
 
 > 圖中左側為 Value Matrix，右側為 Policy Matrix。紅星代表終點，灰色為障礙物。
 
-![執行策略成果圖](static/sample2.png)
+![執行策略成果圖](static/sample2.PNG)
