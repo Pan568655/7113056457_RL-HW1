@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 
+# 建立必要資料夾
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+STATIC_FOLDER = os.path.join(PROJECT_ROOT, 'static')
 os.makedirs('static', exist_ok=True)
 os.makedirs('templates', exist_ok=True)
 
@@ -12,23 +15,31 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # 禁用圖片快取
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    n = 5  # default grid size
+    n = 5  # 預設網格大小
     if request.method == 'POST':
         try:
             n = int(request.form.get('n', 5))
-            n = max(3, min(n, 10))
+            n = max(3, min(n, 10))  # 限制 n 在 3~10
         except:
             pass
     return render_template('index.html', n=n)
 
 @app.route('/api/generate', methods=['POST'])
 def generate_policy_image():
+    print("🔁 收到 POST 請求 /api/generate")
+
     data = request.get_json()
     n = int(data['n'])
     start = tuple(data['start'])
     end = tuple(data['end'])
     walls = [tuple(w) for w in data['walls']]
 
+    print("n =", n)
+    print("start =", start)
+    print("end =", end)
+    print("walls =", walls)
+
+    # 初始化
     actions = [(-1,0), (0,1), (1,0), (0,-1)]  # 上、右、下、左
     gamma = 0.9
     value = np.zeros((n, n))
@@ -53,7 +64,7 @@ def generate_policy_image():
             break
         value = new_value
 
-    # 畫圖
+    # 繪製圖表
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 6))
     for ax in [ax1, ax2]:
         ax.set_xlim(0, n)
@@ -84,12 +95,38 @@ def generate_policy_image():
                           head_width=0.15, head_length=0.15, fc='black', ec='black')
 
     plt.tight_layout()
+
+    # 儲存圖片
+    # ✅ 確保 static 路徑正確
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+    STATIC_FOLDER = os.path.join(PROJECT_ROOT, 'static')
+
+    os.makedirs(STATIC_FOLDER, exist_ok=True)
+
     ts = datetime.now().strftime('%Y%m%d%H%M%S%f')
-    image_path = f'static/result_{ts}.png'
-    plt.savefig(image_path)
+    image_filename = f'result_{ts}.png'
+    image_path = os.path.join(STATIC_FOLDER, image_filename)
+
+    print(f"📂 絕對儲存路徑：{image_path}")
+
+    try:
+        plt.savefig(image_path)
+        print(f"✅ 圖片儲存成功: {image_path}")
+    except Exception as e:
+        print(f"❌ 儲存圖片失敗: {e}")
+
+    if not os.path.exists(image_path):
+        print(f"⚠️ 圖片實際未產生：{image_path}")
+    else:
+        print(f"✅ 圖片真的存在：{image_path}")
+
     plt.close()
 
-    return jsonify({"image_url": '/' + image_path})
+    # ✅ 傳給前端的 URL 要用 Web 格式
+    image_url = f"/static/{image_filename}"
+    return jsonify({"image_url": image_url})
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
